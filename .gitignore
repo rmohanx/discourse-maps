@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets: never commit keys. Copy .env.example to .env.
+.env
+.env.*
+!.env.example
+
+# Local data: downloaded, generated, or copyrighted (PDFs). Re-create with the CLI.
+data/
+
+# Tooling
+.ruff_cache/
+.pytest_cache/
+.DS_Store

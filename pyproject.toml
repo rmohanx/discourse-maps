@@ -1,0 +1,43 @@
+[project]
+name = "discourse-maps"
+version = "0.1.0"
+description = "Plumbing for discourse graphs (Roam, Obsidian, Supabase) in Python"
+readme = "README.md"
+authors = [
+    { email = "6678018+rmohanx@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "bibtexparser>=1.4,<2",
+    "httpx>=0.28.1",
+    "numpy>=2.5.4",
+    "psycopg[binary]>=3.2",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.3",
+    "sentence-transformers>=6.2.0",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+discourse-maps = "discourse_maps:main"
+dm = "discourse_maps:main"
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.2",
+]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]  # long SQL strings; the formatter handles code
+
+[tool.pytest.ini_options]
+markers = ["db: needs the local Supabase database (supabase start)"]
