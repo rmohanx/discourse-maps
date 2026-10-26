@@ -171,3 +171,52 @@ def find_same_work(
         {"space": space_id, "doi": str(doi).lower() if doi else None, "key": bib_key},
     ).fetchone()
     return row["entity_id"] if row else None
+
+
+# ---------------------------------------------------------------- shared copies (see share.py)
+
+RID_PREFIX = "dm:"
+
+
+def make_rid(space_url: str, source_local_id: str) -> str:
+    """Pointer to an original node, carried by its shared copies as `importedFromRid`."""
+    return f"{RID_PREFIX}{space_url}#{source_local_id}"
+
+
+def parse_rid(rid: object) -> tuple[str, str] | None:
+    rid = str(rid or "")
+    if not rid.startswith(RID_PREFIX) or "#" not in rid:
+        return None
+    space_url, local_id = rid[len(RID_PREFIX) :].split("#", 1)
+    return space_url, local_id
+
+
+def resolve_rid(conn: psycopg.Connection, rid: object) -> int | None:
+    """Concept id of the original node a shared copy points at."""
+    parsed = parse_rid(rid)
+    if not parsed:
+        return None
+    row = conn.execute(
+        """select k.id from "Concept" k join "Space" s on s.id = k.space_id
+           where s.url = %s and k.source_local_id = %s""",
+        parsed,
+    ).fetchone()
+    return row["id"] if row else None
+
+
+def relation_exists_elsewhere(
+    conn: psycopg.Connection, space_id: int, label: str, src: int, dst: int
+) -> bool:
+    """True if another space already holds this exact relation (e.g. the origin of shared copies)."""
+    return bool(
+        conn.execute(
+            """
+            select 1 from "Concept" k join "Concept" schema on schema.id = k.schema_id
+            where k.is_relation and not k.is_schema and k.space_id <> %s and schema.name = %s
+              and (k.reference_content->>'source')::bigint = %s
+              and (k.reference_content->>'destination')::bigint = %s
+            limit 1
+            """,
+            (space_id, label, src, dst),
+        ).fetchone()
+    )

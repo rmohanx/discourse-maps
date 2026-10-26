@@ -14,6 +14,9 @@ Python pipeline for discourse graphs on local Supabase. See README.md for comman
 - DB tests are marked `db` and use their own Space, which they delete afterwards.
 - Importers: `obsidian_import.py` (vault, plugin format) and `roam.py` (API/export). Both write Document +
   Content + Concept; review state lives in `Concept.literal_content.review_status` / `proposed_by`.
+- `share.py` is the return trip (DB → vault / Roam). Shared copies carry `importedFromRid` (`dm:<space>#<id>`);
+  importers must map such copies to the original Concept (`resolve_rid`) and skip relations that already exist
+  in another space (`relation_exists_elsewhere`), or sharing would duplicate data on every round trip.
 - RLS is on for every public table; API access is governed by `has_permission()`. The pipeline connects
   as `postgres` and bypasses RLS.
 

@@ -16,6 +16,9 @@ The first dataset is the [Zitter Repository](https://www.zitter-institute.org/p/
 |---|---|---|
 | Obsidian in | `uv run dm import-obsidian <vault>` | A researcher's vault (Discourse Graph plugin format): nodes, review status, relations |
 | Roam in | `uv run dm import-roam` | A Roam graph via the backend API (or `--export file.json`); relations inferred from outline structure |
+| Share → Obsidian | `uv run dm share-to-obsidian --from <space> --vault <vault>` | Return trip: another space's nodes + relations as shared copies in a vault |
+| Share → Roam | `uv run dm share-to-roam --from <space>` | Return trip: pages + `[[SupportedBy]]` structure in the Roam graph |
+| Spaces | `uv run dm spaces` | Every source (Roam graph, vault, import) with node and relation counts |
 | Fetch | `uv run dm fetch` | Downloads the Zitter BibTeX files and paper list into `data/` (git-ignored) |
 | Import | `uv run dm import` | BibTeX → `Document` + `Content` + `Concept` (Source node). Idempotent. |
 | Enrich | `uv run dm enrich` | OpenAlex / Crossref: abstracts, DOIs, topics, citation counts, and **`cites` relations** between papers |
@@ -110,6 +113,22 @@ Relations are inferred from structure like the Roam extension does, e.g. on a Cl
 Both map to the same tables (Document + Content + Concept, relations as relation Concepts), so one
 query spans every tool. Sources that match a paper elsewhere (DOI or BibTeX key) point at it.
 
+## The return trip: sharing between researchers
+
+`dm share-to-obsidian` and `dm share-to-roam` write one space's nodes into another researcher's tool, so
+work made in Roam shows up in an Obsidian vault and vice versa (`--status accepted` shares only reviewed work).
+Shared copies are mirrors, marked like the Discourse Graph plugin marks imports: `importedFromRid` points at
+the original, relations carry `tentative: false` ("imported, not yet accepted"). When the receiver's tool is
+imported again, mirrors map back to the original Concept instead of duplicating, and relations the receiver
+adds to a shared node attach to the original. Re-sharing refreshes mirrors and never touches the receiver's
+own notes. Relation types the receiving vault doesn't define are skipped and counted.
+
+```
+Maya's Roam ──import-roam──▶ Supabase ──share-to-obsidian──▶ Sam's vault
+     ▲                          ▲                                │
+     └────share-to-roam─────────┴──────────import-obsidian───────┘
+```
+
 ## Remote access through the API (RLS)
 
 Every public table has row-level security driven by `has_permission(space, permission)`.
@@ -120,7 +139,7 @@ the role is `contributor`, and even then only as `unknown`, in your own name.
 ## Layout
 
 ```
-src/discourse_maps/   cli, zitter, bibtex, importer, obsidian_import, roam, enrich, embeddings, search, obsidian, db
+src/discourse_maps/   cli, zitter, bibtex, importer, obsidian_import, roam, share, enrich, embeddings, search, obsidian, db
 supabase/migrations/  core tables, standards layers, RLS, RLS hardening
 scripts/              api_user_demo.py (remote user over HTTP under RLS)
 tests/                unit tests + DB integration tests (marked `db`, skip if Supabase is down)
@@ -133,6 +152,7 @@ data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault
 - [x] Roam import via the backend API or JSON export
 - [x] Obsidian vault import (plugin format, review status)
 - [x] RLS on all tables using `has_permission()`
+- [x] Return trip: share nodes into another researcher's vault or Roam graph
 - [ ] Full-text PDF search (needed for questions like "who mentions stochastic electrodynamics?")
 - [ ] Semantic search as an API endpoint (RPC or Edge Function)
 - [ ] SKOS concept schemes for shared vocabularies (ISO 25964), and W3C Web Annotation

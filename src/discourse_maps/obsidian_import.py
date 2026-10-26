@@ -29,6 +29,9 @@ from discourse_maps.importer import (
     RELATION_SCHEMAS,
     ensure_schemas,
     find_same_work,
+    parse_rid,
+    relation_exists_elsewhere,
+    resolve_rid,
     upsert_returning,
 )
 
@@ -165,6 +168,13 @@ def import_vault(conn: psycopg.Connection, root: Path) -> dict[str, int]:
         concept_ids: dict[str, int] = {}
 
         for note in vault.notes:
+            if parse_rid(note.frontmatter.get("importedFromRid")):
+                # A shared copy of someone else's node: map it to the original, don't duplicate it.
+                original = resolve_rid(conn, note.frontmatter["importedFromRid"])
+                if original:
+                    concept_ids[note.key] = original
+                act.count("shared_copies_mapped" if original else "shared_copies_orphaned")
+                continue
             _rekey_path_identity(conn, space_id, note)
             proposer = note.frontmatter.get("proposed_by")
             author = (
@@ -251,6 +261,15 @@ def import_vault(conn: psycopg.Connection, root: Path) -> dict[str, int]:
             schema_key = RELATION_KEY_BY_LABEL.get(rel["type_label"])
             if not schema_key:
                 act.count("skipped_unknown_relation_type")
+                continue
+            src, dst = concept_ids.get(rel["source_key"]), concept_ids.get(rel["destination_key"])
+            if src is None or dst is None:
+                act.count("skipped_relation_missing_node")
+                continue
+            if parse_rid(rel.get("importedFromRid")) or relation_exists_elsewhere(
+                conn, space_id, rel["type_label"], src, dst
+            ):
+                act.count("skipped_relation_shared_copy")  # already held by the origin space
                 continue
             rel_id, inserted = upsert_returning(
                 conn,

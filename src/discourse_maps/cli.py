@@ -73,6 +73,61 @@ def import_roam(
 
 
 @app.command()
+def spaces() -> None:
+    """List spaces (one per Roam graph, Obsidian vault, or import source) and their node counts."""
+    with connect() as conn:
+        for row in conn.execute(
+            """
+            select s.url, s.name, s.platform,
+                   count(k.id) filter (where not k.is_schema and not k.is_relation) as nodes,
+                   count(k.id) filter (where k.is_relation and not k.is_schema) as relations
+            from "Space" s left join "Concept" k on k.space_id = s.id
+            group by s.id order by s.id
+            """
+        ):
+            typer.echo(
+                f"  {row['platform']:<9} {row['nodes']:>4} nodes {row['relations']:>4} rels  {row['url']}"
+            )
+
+
+def _space_name(conn, url: str) -> str:
+    row = conn.execute('select name from "Space" where url = %s', (url,)).fetchone()
+    if not row:
+        raise typer.BadParameter(f"No space {url!r}; see `dm spaces`.")
+    return row["name"]
+
+
+@app.command("share-to-obsidian")
+def share_to_obsidian(
+    from_space: Annotated[str, typer.Option("--from", help="Space URL to share (see `dm spaces`)")],
+    vault: Annotated[Path, typer.Option(help="Receiving vault (with the Discourse Graph plugin)")],
+    status: Annotated[str, typer.Option(help="all | accepted | candidate")] = "all",
+) -> None:
+    """Return trip: write another space's nodes and relations into a vault as shared copies."""
+    from discourse_maps.share import share_to_obsidian as share
+
+    with connect() as conn:
+        _show(share(conn, from_space, _space_name(conn, from_space), vault.expanduser().resolve(), status))
+
+
+@app.command("share-to-roam")
+def share_to_roam(
+    from_space: Annotated[str, typer.Option("--from", help="Space URL to share (see `dm spaces`)")],
+    status: Annotated[str, typer.Option(help="all | accepted | candidate")] = "all",
+) -> None:
+    """Return trip: create another space's nodes and relations as pages in the Roam graph."""
+    from discourse_maps import roam
+    from discourse_maps.share import share_to_roam as share
+
+    settings = get_settings()
+    if not (settings.roam_graph and settings.roam_api_token):
+        raise typer.BadParameter("Set ROAM_GRAPH and ROAM_API_TOKEN in .env.")
+    client = roam.RoamClient(settings.roam_graph, settings.roam_api_token)
+    with connect() as conn:
+        _show(share(conn, from_space, _space_name(conn, from_space), client, status))
+
+
+@app.command()
 def enrich(
     limit: Annotated[int | None, typer.Option(help="Only enrich N documents")] = None,
     force: Annotated[bool, typer.Option(help="Re-query documents already enriched")] = False,

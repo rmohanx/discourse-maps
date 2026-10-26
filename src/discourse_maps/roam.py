@@ -16,6 +16,7 @@ Mapping: node page -> Document + Content (title and outline) + Concept; relation
 
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -24,7 +25,15 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from discourse_maps import db
-from discourse_maps.importer import RELATION_SCHEMAS, ensure_schemas, find_same_work, upsert_returning
+from discourse_maps.importer import (
+    RELATION_SCHEMAS,
+    ensure_schemas,
+    find_same_work,
+    parse_rid,
+    relation_exists_elsewhere,
+    resolve_rid,
+    upsert_returning,
+)
 
 API = "https://api.roamresearch.com/api/graph"
 NODE_PATTERNS = {
@@ -98,8 +107,11 @@ class RoamClient:
 
     def q(self, query: str) -> list:
         url = f"{self.base}/q"
-        for _ in range(3):
+        for _ in range(8):
             resp = self.http.post(url, headers=self.headers, json={"query": query})
+            if resp.status_code == 429:  # rate limited: wait and retry
+                time.sleep(int(resp.headers.get("retry-after", 10)))
+                continue
             if resp.status_code in (307, 308):
                 url = resp.headers["location"]
                 self.base = url.rsplit("/", 1)[0]  # remember the peer for later calls
@@ -245,6 +257,13 @@ def import_graph(conn: psycopg.Connection, graph: RoamGraph) -> dict[str, int]:
         for uid, (kind, _match) in nodes.items():
             title = graph.pages[uid]
             attrs = page_attributes(graph, uid)
+            if parse_rid(attrs.get("imported_from_rid")):
+                # A shared copy of someone else's node: map it to the original, don't duplicate it.
+                original = resolve_rid(conn, attrs["imported_from_rid"])
+                if original:
+                    concept_ids[uid] = original
+                act.count("shared_copies_mapped" if original else "shared_copies_orphaned")
+                continue
             status = attrs.get("status", "accepted")  # hand-written pages count as accepted
             proposer = attrs.get("proposed_by")
             author = owner
@@ -330,7 +349,14 @@ def import_graph(conn: psycopg.Connection, graph: RoamGraph) -> dict[str, int]:
             act.count(f"{kind}_{status}")
             concept_ids[uid] = concept_id
 
-        for rel, src, dst, evidence_block in sorted(relations):
+        for rel, src_uid, dst_uid, evidence_block in sorted(relations):
+            src, dst = concept_ids.get(src_uid), concept_ids.get(dst_uid)
+            if src is None or dst is None:
+                act.count("skipped_relation_missing_node")
+                continue
+            if relation_exists_elsewhere(conn, space_id, RELATION_SCHEMAS[rel], src, dst):
+                act.count("skipped_relation_shared_copy")  # already held by the origin space
+                continue
             rel_id, inserted = upsert_returning(
                 conn,
                 """
@@ -347,8 +373,8 @@ def import_graph(conn: psycopg.Connection, graph: RoamGraph) -> dict[str, int]:
                     owner,
                     schemas[rel],
                     Jsonb({"inferred_from_block": evidence_block}),
-                    Jsonb({"source": concept_ids[src], "destination": concept_ids[dst]}),
-                    f"rel:{rel}:{src}->{dst}",
+                    Jsonb({"source": src, "destination": dst}),
+                    f"rel:{rel}:{src_uid}->{dst_uid}",
                 ),
             )
             act.record(rel_id, inserted)
