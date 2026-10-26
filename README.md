@@ -113,4 +113,4 @@ data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault
 
 ## License
 
-Not chosen yet (Apache-2.0 would match upstream).
+[Apache-2.0](LICENSE), same as upstream DiscourseGraphs/discourse-graph.

@@ -3,6 +3,7 @@ name = "discourse-maps"
 version = "0.1.0"
 description = "Plumbing for discourse graphs (Roam, Obsidian, Supabase) in Python"
 readme = "README.md"
+license = "Apache-2.0"
 authors = [
     { email = "6678018+rmohanx@users.noreply.github.com" }
 ]
