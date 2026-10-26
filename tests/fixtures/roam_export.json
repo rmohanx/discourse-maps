@@ -1,0 +1,48 @@
+[
+  {"title": "[[QUE]] - What is the size of the electron", "uid": "q-size", "children": [
+    {"uid": "q1", "string": "status:: candidate"},
+    {"uid": "q2", "string": "proposed_by:: claude-opus-5.5 (LLM)"},
+    {"uid": "q3", "string": "Point particle, or a structure at the Compton scale?"},
+    {"uid": "q4", "string": "[[[[EVD]] - Compton 1919 explained gamma-ray scattering with an electron radius of about 2e-10 cm - @Compton 1919 The Size and Shape of the Electron II]]"}
+  ]},
+  {"title": "[[CLM]] - The electron has a finite size of the order of its Compton wavelength", "uid": "c-size", "children": [
+    {"uid": "c1", "string": "status:: candidate"},
+    {"uid": "c2", "string": "proposed_by:: claude-opus-5.5 (LLM)"},
+    {"uid": "c3", "string": "[[SupportedBy]]", "children": [
+      {"uid": "c3a", "string": "[[[[EVD]] - Compton 1919 explained gamma-ray scattering with an electron radius of about 2e-10 cm - @Compton 1919 The Size and Shape of the Electron II]]"}
+    ]}
+  ]},
+  {"title": "[[CLM]] - The electron is a point particle", "uid": "c-point", "children": [
+    {"uid": "p1", "string": "The Standard Model treats the electron as having no size."},
+    {"uid": "p2", "string": "[[OpposedBy]]", "children": [
+      {"uid": "p2a", "string": "[[[[EVD]] - Compton 1919 explained gamma-ray scattering with an electron radius of about 2e-10 cm - @Compton 1919 The Size and Shape of the Electron II]]"}
+    ]},
+    {"uid": "p3", "string": "[[SupportedBy]]", "children": [
+      {"uid": "p3a", "string": "[[[[EVD]] - Dirac 1928 explained spin duplexity with a relativistic point charge - @Dirac 1928 The Quantum Theory of the Electron]]"}
+    ]}
+  ]},
+  {"title": "[[EVD]] - Compton 1919 explained gamma-ray scattering with an electron radius of about 2e-10 cm - @Compton 1919 The Size and Shape of the Electron II", "uid": "e-compton", "children": [
+    {"uid": "e1", "string": "status:: candidate"},
+    {"uid": "e2", "string": "proposed_by:: claude-opus-5.5 (LLM)"},
+    {"uid": "e3", "string": "> It is concluded that the diameter of the electron is comparable in magnitude with the wave-length of the shortest γ-rays."}
+  ]},
+  {"title": "[[EVD]] - Dirac 1928 explained spin duplexity with a relativistic point charge - @Dirac 1928 The Quantum Theory of the Electron", "uid": "e-dirac", "children": [
+    {"uid": "d1", "string": "status:: candidate"},
+    {"uid": "d2", "string": "proposed_by:: claude-opus-5.5 (LLM)"},
+    {"uid": "d3", "string": "> the simplest Hamiltonian for a point-charge electron ... leads to an explanation of all duplexity phenomena without further assumption."}
+  ]},
+  {"title": "@Compton 1919 The Size and Shape of the Electron II", "uid": "s-compton", "children": [
+    {"uid": "s1", "string": "doi:: 10.1103/physrev.14.20"}
+  ]},
+  {"title": "@Dirac 1928 The Quantum Theory of the Electron", "uid": "s-dirac", "children": [
+    {"uid": "s2", "string": "doi:: 10.1098/rspa.1928.0023"}
+  ]},
+  {"title": "SupportedBy", "uid": "m-sup"},
+  {"title": "OpposedBy", "uid": "m-opp"},
+  {"title": "QUE", "uid": "t-que"},
+  {"title": "CLM", "uid": "t-clm"},
+  {"title": "EVD", "uid": "t-evd"},
+  {"title": "October 26th, 2026", "uid": "10-26-2026", "children": [
+    {"uid": "dn1", "string": "Daily note, not a discourse node."}
+  ]}
+]

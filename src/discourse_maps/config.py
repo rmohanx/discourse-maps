@@ -18,6 +18,8 @@ class Settings:
     scholarly_mailto: str | None
     openalex_api_key: str | None
     embedding_provider: str
+    roam_graph: str | None
+    roam_api_token: str | None
 
 
 def get_settings() -> Settings:
@@ -28,4 +30,6 @@ def get_settings() -> Settings:
         scholarly_mailto=os.environ.get("SCHOLARLY_MAILTO") or None,
         openalex_api_key=os.environ.get("OPENALEX_API_KEY") or None,
         embedding_provider=os.environ.get("EMBEDDING_PROVIDER", "qwen3"),
+        roam_graph=os.environ.get("ROAM_GRAPH") or None,
+        roam_api_token=os.environ.get("ROAM_API_TOKEN") or None,
     )

@@ -152,3 +152,22 @@ def import_records(
             add_identifier(conn, doc_id, "url", rec.url)
         act.count("records", len(records))
     return act.summary
+
+
+def find_same_work(
+    conn: psycopg.Connection, space_id: int, doi: str | None, bib_key: str | None
+) -> int | None:
+    """Document id of the same paper in another space (by DOI, else BibTeX key): one copy per work."""
+    if not (doi or bib_key):
+        return None
+    row = conn.execute(
+        """
+        select e.entity_id from external_identifier e join "Document" d on d.id = e.entity_id
+        where d.space_id <> %(space)s
+          and ((e.scheme = 'doi' and e.value = %(doi)s)
+               or (e.scheme = 'bibtex_key' and e.value = d.space_id || ':' || %(key)s))
+        order by e.scheme = 'doi' desc limit 1
+        """,
+        {"space": space_id, "doi": str(doi).lower() if doi else None, "key": bib_key},
+    ).fetchone()
+    return row["entity_id"] if row else None

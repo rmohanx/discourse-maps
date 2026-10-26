@@ -54,6 +54,24 @@ def import_obsidian(
         _show(import_vault(conn, vault.expanduser().resolve()))
 
 
+@app.command("import-roam")
+def import_roam(
+    export: Annotated[Path | None, typer.Option(help="Roam JSON export instead of the live API")] = None,
+) -> None:
+    """Import a Roam graph (Discourse Graph conventions) via the backend API or a JSON export."""
+    from discourse_maps import roam
+
+    if export:
+        graph = roam.read_graph_export(export)
+    else:
+        settings = get_settings()
+        if not (settings.roam_graph and settings.roam_api_token):
+            raise typer.BadParameter("Set ROAM_GRAPH and ROAM_API_TOKEN in .env, or pass --export.")
+        graph = roam.read_graph_api(roam.RoamClient(settings.roam_graph, settings.roam_api_token))
+    with connect() as conn:
+        _show(roam.import_graph(conn, graph))
+
+
 @app.command()
 def enrich(
     limit: Annotated[int | None, typer.Option(help="Only enrich N documents")] = None,

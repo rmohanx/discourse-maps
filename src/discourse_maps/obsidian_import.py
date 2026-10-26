@@ -24,7 +24,13 @@ import yaml
 from psycopg.types.json import Jsonb
 
 from discourse_maps import db
-from discourse_maps.importer import NODE_SCHEMAS, RELATION_SCHEMAS, ensure_schemas, upsert_returning
+from discourse_maps.importer import (
+    NODE_SCHEMAS,
+    RELATION_SCHEMAS,
+    ensure_schemas,
+    find_same_work,
+    upsert_returning,
+)
 
 PLUGIN_SETTINGS = Path(".obsidian/plugins/discourse-graphs/data.json")
 NODE_KEY_BY_NAME = {name: key for key, name in NODE_SCHEMAS.items()}
@@ -209,21 +215,12 @@ def import_vault(conn: psycopg.Connection, root: Path) -> dict[str, int]:
             literal = {"review_status": status, "proposed_by": proposer, "node_type": note.node_type}
             reference = {"document": doc_id, "content": content_id}
             if note.node_type == "Source":
-                # Same paper already in another space (e.g. the Zitter import)? Point at it: one copy per
-                # work. Match on DOI, else on the BibTeX key our seeded notes carry.
-                doi, bib_key = note.frontmatter.get("doi"), note.frontmatter.get("zitter_key")
-                same = conn.execute(
-                    """
-                    select e.entity_id from external_identifier e join "Document" d on d.id = e.entity_id
-                    where d.space_id <> %(space)s
-                      and ((e.scheme = 'doi' and e.value = %(doi)s)
-                           or (e.scheme = 'bibtex_key' and e.value = d.space_id || ':' || %(key)s))
-                    order by e.scheme = 'doi' desc limit 1
-                    """,
-                    {"space": space_id, "doi": str(doi).lower() if doi else None, "key": bib_key},
-                ).fetchone()
+                # Same paper already in another space (e.g. the Zitter import)? Point at it.
+                same = find_same_work(
+                    conn, space_id, note.frontmatter.get("doi"), note.frontmatter.get("zitter_key")
+                )
                 if same:
-                    reference["same_work_as_document"] = same["entity_id"]
+                    reference["same_work_as_document"] = same
             concept_id, inserted = upsert_returning(
                 conn,
                 """
