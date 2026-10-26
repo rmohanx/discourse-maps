@@ -14,12 +14,14 @@ The first dataset is the [Zitter Repository](https://www.zitter-institute.org/p/
 
 | Step | Command | What it does |
 |---|---|---|
+| Obsidian in | `uv run dm import-obsidian <vault>` | A researcher's vault (Discourse Graph plugin format): nodes, review status, relations |
+| Roam in | `uv run dm import-roam` | A Roam graph via the backend API (or `--export file.json`); relations inferred from outline structure |
 | Fetch | `uv run dm fetch` | Downloads the Zitter BibTeX files and paper list into `data/` (git-ignored) |
 | Import | `uv run dm import` | BibTeX → `Document` + `Content` + `Concept` (Source node). Idempotent. |
 | Enrich | `uv run dm enrich` | OpenAlex / Crossref: abstracts, DOIs, topics, citation counts, and **`cites` relations** between papers |
 | Embed | `uv run dm embed` | Local **Qwen3-Embedding-0.6B** vectors (Apple GPU via MPS); only new or changed rows |
 | Search | `uv run dm search "..."` | `--mode keyword \| fuzzy \| semantic`, plus `--serendipity 0..1` |
-| Obsidian | `uv run dm export-obsidian` | One note per Source with frontmatter and `[[wiki-links]]` for relations |
+| Obsidian out | `uv run dm export-obsidian` | Zitter Sources as notes with frontmatter and `[[wiki-links]]` (secondary) |
 | Status | `uv run dm status` | Row counts and the latest pipeline runs (from provenance) |
 | PDFs | `uv run dm fetch-pdfs` | Optional, slow, local only. PDFs are never committed (publishers' copyright). |
 
@@ -45,16 +47,16 @@ Supabase Studio: http://127.0.0.1:54323. MCP endpoint: http://127.0.0.1:54321/mc
 ## Architecture
 
 ```
- Zitter BibTeX ─┐                      ┌─ OpenAlex / Crossref (enrichment)
-                ▼                      ▼
-        Python pipeline (uv, typer, psycopg) ── Qwen3 embeddings (local)
-                │
-                ▼
-     Supabase (Postgres 17: pgvector, pg_trgm, full-text, RBAC, PROV-O)
-                │
-        ┌───────┴────────┐
-        ▼                ▼
-   Obsidian vault     Roam (next)
+ Researcher's Obsidian vault ─┐        ┌─ Zitter BibTeX ─▶ OpenAlex / Crossref enrichment
+ Researcher's Roam graph ─────┤        │
+                              ▼        ▼
+              Python pipeline (uv, typer, psycopg) ── Qwen3 embeddings (local)
+                              │
+                              ▼
+   Supabase (Postgres 17): one schema for every tool · pgvector · FTS · PROV-O · RBAC + RLS
+                              │
+                              ▼
+        HTTP API (PostgREST + Auth JWT): remote users see only what their role allows
 ```
 
 ### Data model
@@ -92,11 +94,35 @@ At `s = 0` you get the closest matches. As `s` rises, results that resemble each
 down and different-but-relevant work moves up, e.g. a 1919 ring-electron paper next to a 2005
 spin model. The candidate pool stays relevant to the query, so it's still a search, not a random walk.
 
+## Importing researchers' notes
+
+**Obsidian** (`dm import-obsidian ~/path/to/vault`) reads what the Discourse Graph plugin writes: node
+types from `.obsidian/plugins/discourse-graphs/data.json`, notes with `nodeTypeId` / `nodeInstanceId`
+frontmatter, and `relations.json`. Review state rides along: `status: candidate` and `proposed_by: <agent>`
+mark LLM-proposed nodes; hand-written notes count as accepted.
+
+**Roam** (`dm import-roam`, needs `ROAM_GRAPH` + `ROAM_API_TOKEN`) reads pages and blocks via Datalog.
+Discourse nodes are pages titled `[[QUE]] - …`, `[[CLM]] - …`, `[[EVD]] - … - @Source`, `@Source`.
+Relations are inferred from structure like the Roam extension does, e.g. on a Claim page a block
+`[[SupportedBy]]` with a child linking an Evidence page means *Evidence supports Claim*.
+`status::` and `proposed_by::` attributes carry review state.
+
+Both map to the same tables (Document + Content + Concept, relations as relation Concepts), so one
+query spans every tool. Sources that match a paper elsewhere (DOI or BibTeX key) point at it.
+
+## Remote access through the API (RLS)
+
+Every public table has row-level security driven by `has_permission(space, permission)`.
+`uv run python scripts/api_user_demo.py` plays a remote user: sign in over HTTP, get a JWT, and query
+`/rest/v1/...`. A `reader` on the Zitter space sees only that space; proposing a Claim is refused until
+the role is `contributor`, and even then only as `unknown`, in your own name.
+
 ## Layout
 
 ```
-src/discourse_maps/   cli, zitter (fetch), bibtex, importer, enrich, embeddings, search, obsidian, db
-supabase/migrations/  20261026000001_core.sql, 20261026000002_standards_layers.sql
+src/discourse_maps/   cli, zitter, bibtex, importer, obsidian_import, roam, enrich, embeddings, search, obsidian, db
+supabase/migrations/  core tables, standards layers, RLS, RLS hardening
+scripts/              api_user_demo.py (remote user over HTTP under RLS)
 tests/                unit tests + DB integration tests (marked `db`, skip if Supabase is down)
 docs/design/          original concept, vision, and architecture documents
 data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault
@@ -104,9 +130,11 @@ data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault
 
 ## Roadmap
 
-- [ ] Roam: import/export via the Roam backend API or JSON export
-- [ ] Obsidian → Supabase direction (read hand-written Claim/Evidence notes back in)
-- [ ] Enable RLS on core tables using `has_permission()`
+- [x] Roam import via the backend API or JSON export
+- [x] Obsidian vault import (plugin format, review status)
+- [x] RLS on all tables using `has_permission()`
+- [ ] Full-text PDF search (needed for questions like "who mentions stochastic electrodynamics?")
+- [ ] Semantic search as an API endpoint (RPC or Edge Function)
 - [ ] SKOS concept schemes for shared vocabularies (ISO 25964), and W3C Web Annotation
 - [ ] HTTP API (FastAPI) mirroring upstream endpoints; nanopublication (RDF) export
 - [ ] Claim/Evidence extraction from abstracts with an LLM, stored as *proposed* Concepts
