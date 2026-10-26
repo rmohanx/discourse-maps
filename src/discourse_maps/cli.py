@@ -43,6 +43,17 @@ def import_() -> None:
         _show(import_records(conn, records))
 
 
+@app.command("import-obsidian")
+def import_obsidian(
+    vault: Annotated[Path, typer.Argument(help="Vault folder with the Discourse Graph plugin")],
+) -> None:
+    """Import a researcher's Obsidian vault (nodes, review status, relations). Idempotent."""
+    from discourse_maps.obsidian_import import import_vault
+
+    with connect() as conn:
+        _show(import_vault(conn, vault.expanduser().resolve()))
+
+
 @app.command()
 def enrich(
     limit: Annotated[int | None, typer.Option(help="Only enrich N documents")] = None,

@@ -1,0 +1,13 @@
+{
+  "nodeTypes": [
+    {"id": "node_q", "name": "Question", "format": "QUE - {content}"},
+    {"id": "node_c", "name": "Claim", "format": "CLM - {content}"},
+    {"id": "node_e", "name": "Evidence", "format": "EVD - {content}"},
+    {"id": "node_s", "name": "Source", "format": "SRC - {content}"}
+  ],
+  "relationTypes": [
+    {"id": "rel_sup", "label": "supports"},
+    {"id": "rel_der", "label": "derived from"}
+  ],
+  "syncModeEnabled": false
+}
