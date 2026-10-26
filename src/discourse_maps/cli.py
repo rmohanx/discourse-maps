@@ -75,6 +75,8 @@ def search(
     """Search Sources."""
     from discourse_maps import search as s
 
+    if serendipity and mode != "semantic":
+        raise typer.BadParameter("--serendipity only applies to --mode semantic")
     with connect() as conn:
         if mode == "keyword":
             hits = s.keyword(conn, query, k)

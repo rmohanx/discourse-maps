@@ -31,7 +31,10 @@ class Qwen3Provider:
         from sentence_transformers import SentenceTransformer
 
         device = "mps" if torch.backends.mps.is_available() else "cpu"
-        self.model = SentenceTransformer(self.model_id, device=device)
+        try:  # use the cached model without contacting Hugging Face; download only the first time
+            self.model = SentenceTransformer(self.model_id, device=device, local_files_only=True)
+        except OSError:
+            self.model = SentenceTransformer(self.model_id, device=device)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self.model.encode(texts, batch_size=16, normalize_embeddings=True).tolist()
