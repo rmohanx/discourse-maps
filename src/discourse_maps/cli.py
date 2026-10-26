@@ -118,7 +118,7 @@ def search(
         else:
             raise typer.BadParameter("mode must be keyword, fuzzy, or semantic")
     for hit in hits:
-        typer.echo(f"{hit.score:6.3f}  {hit.year or '????'}  {hit.key:<12} {hit.title}")
+        typer.echo(f"{hit.score:6.3f}  {hit.platform:<8} {hit.year or '    '}  {hit.title[:100]}")
 
 
 @app.command("export-obsidian")

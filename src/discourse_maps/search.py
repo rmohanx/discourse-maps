@@ -24,11 +24,14 @@ class Hit:
     title: str
     year: int | None
     score: float
+    platform: str = ""
 
 
 _SELECT = """
-    select c.id, c.source_local_id as key, d.metadata->>'title' as title,
-           (d.metadata->>'year')::int as year
+    select c.id, c.source_local_id as key,
+           coalesce(d.metadata->>'title', split_part(c.text, E'\n', 1)) as title,
+           (d.metadata->>'year')::int as year,
+           (select sp.platform::text from "Space" sp where sp.id = c.space_id) as platform
 """
 
 
@@ -42,7 +45,7 @@ def keyword(conn: psycopg.Connection, query: str, k: int = 10) -> list[Hit]:
         """,
         (query, k),
     ).fetchall()
-    return [Hit(r["id"], r["key"], r["title"], r["year"], float(r["score"])) for r in rows]
+    return [Hit(r["id"], r["key"], r["title"], r["year"], float(r["score"]), r["platform"]) for r in rows]
 
 
 def fuzzy(conn: psycopg.Connection, query: str, k: int = 10) -> list[Hit]:
@@ -54,7 +57,7 @@ def fuzzy(conn: psycopg.Connection, query: str, k: int = 10) -> list[Hit]:
         """,
         (query, k),
     ).fetchall()
-    return [Hit(r["id"], r["key"], r["title"], r["year"], float(r["score"])) for r in rows]
+    return [Hit(r["id"], r["key"], r["title"], r["year"], float(r["score"]), r["platform"]) for r in rows]
 
 
 def mmr(query_vec: np.ndarray, cand_vecs: np.ndarray, k: int, serendipity: float) -> list[int]:
@@ -101,6 +104,13 @@ def semantic(
         cand = np.array([json.loads(r["vec"]) for r in rows])
         order = mmr(np.array(qvec), cand, k, serendipity)
     return [
-        Hit(rows[i]["id"], rows[i]["key"], rows[i]["title"], rows[i]["year"], float(rows[i]["score"]))
+        Hit(
+            rows[i]["id"],
+            rows[i]["key"],
+            rows[i]["title"],
+            rows[i]["year"],
+            float(rows[i]["score"]),
+            rows[i]["platform"],
+        )
         for i in order
     ]
