@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 from urllib.parse import quote
@@ -81,3 +82,24 @@ def test_plugin_assigning_an_id_later_does_not_duplicate(conn, vault_copy):
     second = import_vault(conn, vault_copy)
     assert "generated" not in second
     assert len([r for r in _concepts(conn, vault_copy) if not r["is_relation"]]) == 3
+
+
+@pytest.mark.db
+def test_custom_node_and_relation_types_are_imported(conn, vault_copy):
+    settings_path = vault_copy / ".obsidian/plugins/discourse-graphs/data.json"
+    settings = json.loads(settings_path.read_text())
+    settings["nodeTypes"].append({"id": "node_h", "name": "Hypothesis", "format": "HYP - {content}"})
+    settings["relationTypes"].append({"id": "rel_tests", "label": "tests"})
+    settings_path.write_text(json.dumps(settings))
+    (vault_copy / "HYP - Electrons have a toroidal moment.md").write_text(
+        '---\nnodeTypeId: node_h\nnodeInstanceId: "hyp-1"\nrel_tests: "[[SRC - Huang 1952]]"\n---\n'
+    )
+
+    summary = import_vault(conn, vault_copy)
+    assert summary["hypothesis_accepted"] == 1 and summary["relation_tests"] == 1
+    schemas = conn.execute(
+        """select k.name from "Concept" k join "Space" s on s.id = k.space_id
+           where s.url = %s and k.is_schema and k.literal_content->>'custom' = 'true' order by k.name""",
+        (f"obsidian://vault/{quote(vault_copy.name)}",),
+    ).fetchall()
+    assert [r["name"] for r in schemas] == ["Hypothesis", "tests"]

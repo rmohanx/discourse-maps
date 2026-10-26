@@ -25,19 +25,16 @@ from psycopg.types.json import Jsonb
 
 from discourse_maps import db
 from discourse_maps.importer import (
-    NODE_SCHEMAS,
-    RELATION_SCHEMAS,
     ensure_schemas,
     find_same_work,
     parse_rid,
     relation_exists_elsewhere,
     resolve_rid,
+    schema_for,
     upsert_returning,
 )
 
 PLUGIN_SETTINGS = Path(".obsidian/plugins/discourse-graphs/data.json")
-NODE_KEY_BY_NAME = {name: key for key, name in NODE_SCHEMAS.items()}
-RELATION_KEY_BY_LABEL = {label: key for key, label in RELATION_SCHEMAS.items()}
 _FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n?(.*)\Z", re.S)
 _WIKILINK = re.compile(r"\[\[([^\]|#]+)")
 
@@ -247,7 +244,7 @@ def import_vault(conn: psycopg.Connection, root: Path) -> dict[str, int]:
                     note.title,
                     space_id,
                     author,
-                    schemas[NODE_KEY_BY_NAME[note.node_type]],
+                    schema_for(conn, space_id, pipeline, schemas, note.node_type),
                     Jsonb(literal),
                     Jsonb(reference),
                     note.key,
@@ -258,10 +255,7 @@ def import_vault(conn: psycopg.Connection, root: Path) -> dict[str, int]:
             concept_ids[note.key] = concept_id
 
         for rel in vault.relations:
-            schema_key = RELATION_KEY_BY_LABEL.get(rel["type_label"])
-            if not schema_key:
-                act.count("skipped_unknown_relation_type")
-                continue
+            schema_id = schema_for(conn, space_id, pipeline, schemas, rel["type_label"], is_relation=True)
             src, dst = concept_ids.get(rel["source_key"]), concept_ids.get(rel["destination_key"])
             if src is None or dst is None:
                 act.count("skipped_relation_missing_node")
@@ -286,18 +280,13 @@ def import_vault(conn: psycopg.Connection, root: Path) -> dict[str, int]:
                     rel["type_label"],
                     space_id,
                     owner,
-                    schemas[schema_key],
+                    schema_id,
                     Jsonb({"tentative": rel.get("tentative")}),
-                    Jsonb(
-                        {
-                            "source": concept_ids[rel["source_key"]],
-                            "destination": concept_ids[rel["destination_key"]],
-                        }
-                    ),
+                    Jsonb({"source": src, "destination": dst}),
                     f"rel:{rel['id']}",
                 ),
             )
             act.record(rel_id, inserted)
-            act.count(f"relation_{schema_key}")
+            act.count(f"relation_{rel['type_label'].replace(' ', '_')}")
         act.count("notes", len(vault.notes))
     return act.summary

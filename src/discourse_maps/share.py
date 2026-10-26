@@ -120,6 +120,7 @@ def share_to_obsidian(
 ) -> dict[str, int]:
     settings = json.loads((vault / PLUGIN_SETTINGS).read_text(encoding="utf-8"))
     type_ids = {n["name"]: n["id"] for n in settings["nodeTypes"]}
+    formats = {n["name"]: n.get("format") or f"{n['name']} - {{content}}" for n in settings["nodeTypes"]}
     relation_ids = {r["label"]: r["id"] for r in settings["relationTypes"]}
     nodes, relations = load_space(conn, space_url, status)
     folder = vault / "Shared" / _filename(space_name)
@@ -146,7 +147,7 @@ def share_to_obsidian(
             counts["skipped_unknown_type"] += 1
             continue
         instance_ids[node.key] = stable_id(vault.name, node.rid)
-        title = f"{OBSIDIAN_PREFIX[node.node_type]} - {node.content}"
+        title = formats[node.node_type].replace("{content}", node.content)
         front = {
             "nodeTypeId": type_ids[node.node_type],
             "nodeInstanceId": instance_ids[node.key],

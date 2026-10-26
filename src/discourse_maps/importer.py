@@ -9,6 +9,7 @@ plus external identifiers (bibtex key, DOI, URL) and PROV-O generation records.
 Every write is an upsert on a natural key, so re-running an import changes nothing new.
 """
 
+import re
 from collections.abc import Iterable
 
 import psycopg
@@ -28,6 +29,8 @@ RELATION_SCHEMAS = {
     "derived_from": "derived from",
     "cites": "cites",  # ours: bibliographic citation between Sources (from OpenAlex)
 }
+NODE_KEY_BY_NAME = {name: key for key, name in NODE_SCHEMAS.items()}
+RELATION_KEY_BY_LABEL = {label: key for key, label in RELATION_SCHEMAS.items()}
 
 
 def upsert_returning(conn: psycopg.Connection, sql: str, params: tuple) -> tuple[int, bool]:
@@ -61,6 +64,37 @@ def ensure_schemas(conn: psycopg.Connection, space_id: int, agent_id: int) -> di
             (label, space_id, agent_id, f"schema:relation:{key}"),
         )
     return ids
+
+
+def schema_for(
+    conn: psycopg.Connection,
+    space_id: int,
+    agent_id: int,
+    schemas: dict,
+    name: str,
+    is_relation: bool = False,
+) -> int:
+    """Schema Concept for a node or relation type. Standard types come from ensure_schemas(); a lab's
+    custom type (e.g. a "Hypothesis" node or a "replicates" relation) gets its own schema on first sight."""
+    key = (RELATION_KEY_BY_LABEL if is_relation else NODE_KEY_BY_NAME).get(name)
+    if key:
+        return schemas[key]
+    kind = "relation" if is_relation else "node"
+    cache_key = f"custom:{kind}:{name}"
+    if cache_key not in schemas:
+        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        schemas[cache_key], _ = upsert_returning(
+            conn,
+            """
+            insert into "Concept" (name, space_id, author_id, is_schema, is_relation, arity,
+                                   literal_content, source_local_id)
+            values (%s, %s, %s, true, %s, %s, '{"custom": true}', %s)
+            on conflict (space_id, source_local_id) do update set name = excluded.name
+            returning id, (xmax = 0) as inserted
+            """,
+            (name, space_id, agent_id, is_relation, 2 if is_relation else 0, f"schema:{kind}:custom:{slug}"),
+        )
+    return schemas[cache_key]
 
 
 def add_identifier(conn: psycopg.Connection, entity_id: int, scheme: str, value: str | None) -> None:
