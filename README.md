@@ -44,7 +44,7 @@ uv sync
 uv run dm fetch && uv run dm import && uv run dm enrich && uv run dm embed
 uv run dm search "why does the electron have spin" --serendipity 0.5
 uv run dm export-obsidian         # then open data/obsidian-vault in Obsidian
-uv run pytest
+uv run pytest                     # 29 tests; see docs/testing.md for each case and manual checks
 ```
 
 Supabase Studio: http://127.0.0.1:54323. MCP endpoint: http://127.0.0.1:54321/mcp (registered in `.mcp.json`).
@@ -149,6 +149,7 @@ the role is `contributor`, and even then only as `unknown`, in your own name.
 src/discourse_maps/   cli, zitter, bibtex, importer, obsidian_import, roam, share, enrich, embeddings, search, obsidian, db
 supabase/migrations/  core tables, standards layers, RLS, RLS hardening, sync history
 docs/sync.md          sync / repeat-sync / conflict scenarios and policies
+docs/testing.md       every test case (automated and manual) and how to run it from the CLI
 scripts/              api_user_demo.py (remote user over HTTP under RLS)
 tests/                unit tests + DB integration tests (marked `db`, skip if Supabase is down)
 docs/design/          original concept, vision, and architecture documents
