@@ -21,3 +21,7 @@ data/
 .ruff_cache/
 .pytest_cache/
 .DS_Store
+
+# Claude Code project notes (kept local)
+CLAUDE.md
+CLAUDE.local.md
