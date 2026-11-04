@@ -79,11 +79,11 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
 Hosted project on the Free plan (us-east-1). Free pauses after 1 week of inactivity; Pro + Micro is
 $25/month flat and upgrades in place.
 
-- [x] Create project, `supabase link`, `supabase db push --linked` (5 migrations, RLS on all 16 tables).
+- [x] Create project, `supabase link`, `supabase db push --remote` (RLS on all 16 tables).
 - [x] `dm --target local|cloud`; tests forced to local.
 - [x] Load cloud by re-running the pipeline (224 documents, 269 relations, 224 embeddings).
 - [x] `scripts/pull_cloud.sh` to refresh the laptop from the cloud.
-- [ ] Run the Security and Performance Advisors on the cloud project (dashboard or Supabase MCP).
+- [x] Advisors on the cloud project (Management API): Security 0 findings after migration 6; only "unused index" info notes remain.
 - [ ] Auth: invite-only (disable open sign-ups), set site URL and redirect URLs.
 - [ ] Reset the database password to a generated one before inviting users.
 - [ ] Turn off `pg_graphql` unless needed; keep auth rate limits on.

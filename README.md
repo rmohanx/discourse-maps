@@ -85,7 +85,7 @@ every importer idempotent; keyword search uses Postgres full-text + trigram rath
 |---|---|---|
 | Persistent identifiers | DOI (ISO 26324), URI (RFC 3986), OpenAlex IDs | `external_identifier` |
 | Provenance | W3C PROV-O (Activity, wasGeneratedBy, wasAssociatedWith) | `prov_activity`, `prov_generation` |
-| Access control | NIST RBAC (roles → permissions, assigned per space) | `rbac_role`, `rbac_permission`, `rbac_role_permission`, `rbac_role_assignment`, `has_permission()` |
+| Access control | NIST RBAC (roles → permissions, assigned per space) | `rbac_role`, `rbac_permission`, `rbac_role_permission`, `rbac_role_assignment`, `private.has_permission()` |
 | Serendipity | Maximal Marginal Relevance, inspired by Stanley's novelty search | `search.mmr()` |
 
 Every pipeline run is a PROV-O activity: which agent ran it, with which parameters, and which
@@ -147,7 +147,7 @@ the role is `contributor`, and even then only as `unknown`, in your own name.
 
 The hosted Supabase project is the main copy; the local Docker database is a working copy.
 
-- **Schema** goes one way, laptop to cloud: `supabase db push --linked` (try `--dry-run` first).
+- **Schema** goes one way, laptop to cloud: `supabase db push --remote --yes` (try `--dry-run` first; CLI v3 needs `--yes` for hosted changes).
 - **Pipeline** runs on the laptop against either database: `uv run dm --target cloud <command>`
   (or `DM_TARGET=cloud`). Default is `local`. Cloud settings live in the git-ignored `.env.cloud`
   (`DATABASE_URL_CLOUD`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, ...).

@@ -71,5 +71,5 @@ def test_has_permission_denies_without_role(conn):
     import_records(conn, parse_file(FIXTURE), TEST_SPACE)
     space_id = conn.execute('select id from "Space" where url = %s', (TEST_SPACE[0],)).fetchone()["id"]
     # No auth.uid() in a direct connection, so no account matches: access is denied.
-    allowed = conn.execute("select public.has_permission(%s, 'content:read') as ok", (space_id,)).fetchone()
+    allowed = conn.execute("select private.has_permission(%s, 'content:read') as ok", (space_id,)).fetchone()
     assert allowed["ok"] is False
