@@ -254,3 +254,19 @@ def relation_exists_elsewhere(
             (space_id, label, src, dst),
         ).fetchone()
     )
+
+
+def mark_missing_deleted(conn: psycopg.Connection, space_id: int, seen_keys: set[str]) -> int:
+    """Nodes/relations no longer present in their home tool are marked deleted, never removed (docs/sync.md I4).
+    A node that reappears gets a fresh literal_content from the importer, which clears the mark (I5)."""
+    rows = conn.execute(
+        """
+        update "Concept" set literal_content = literal_content || jsonb_build_object('deleted_at', now()),
+                             last_modified = now()
+        where space_id = %s and not is_schema and not (literal_content ? 'deleted_at')
+          and not (source_local_id = any(%s))
+        returning id
+        """,
+        (space_id, list(seen_keys)),
+    ).fetchall()
+    return len(rows)

@@ -27,6 +27,7 @@ from discourse_maps import db
 from discourse_maps.importer import (
     ensure_schemas,
     find_same_work,
+    mark_missing_deleted,
     parse_rid,
     relation_exists_elsewhere,
     resolve_rid,
@@ -288,5 +289,8 @@ def import_vault(conn: psycopg.Connection, root: Path) -> dict[str, int]:
             )
             act.record(rel_id, inserted)
             act.count(f"relation_{rel['type_label'].replace(' ', '_')}")
+        seen = {n.key for n in vault.notes} | {f"rel:{r['id']}" for r in vault.relations}
+        if deleted := mark_missing_deleted(conn, space_id, seen):
+            act.count("marked_deleted", deleted)
         act.count("notes", len(vault.notes))
     return act.summary

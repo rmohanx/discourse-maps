@@ -18,6 +18,8 @@ The first dataset is the [Zitter Repository](https://www.zitter-institute.org/p/
 | Roam in | `uv run dm import-roam` | A Roam graph via the backend API (or `--export file.json`); relations inferred from outline structure |
 | Share → Obsidian | `uv run dm share-to-obsidian --from <space> --vault <vault>` | Return trip: another space's nodes + relations as shared copies in a vault |
 | Share → Roam | `uv run dm share-to-roam --from <space>` | Return trip: pages + `[[SupportedBy]]` structure in the Roam graph |
+| History | `uv run dm history "<title>"` | Every recorded version of a node and the run that replaced it |
+| Conflicts | `uv run dm conflicts` | Mirrors a receiver edited after which the original changed |
 | Spaces | `uv run dm spaces` | Every source (Roam graph, vault, import) with node and relation counts |
 | Fetch | `uv run dm fetch` | Downloads the Zitter BibTeX files and paper list into `data/` (git-ignored) |
 | Import | `uv run dm import` | BibTeX → `Document` + `Content` + `Concept` (Source node). Idempotent. |
@@ -117,11 +119,16 @@ query spans every tool. Sources that match a paper elsewhere (DOI or BibTeX key)
 
 `dm share-to-obsidian` and `dm share-to-roam` write one space's nodes into another researcher's tool, so
 work made in Roam shows up in an Obsidian vault and vice versa (`--status accepted` shares only reviewed work).
-Shared copies are mirrors, marked like the Discourse Graph plugin marks imports: `importedFromRid` points at
-the original, relations carry `tentative: false` ("imported, not yet accepted"). When the receiver's tool is
-imported again, mirrors map back to the original Concept instead of duplicating, and relations the receiver
-adds to a shared node attach to the original. Re-sharing refreshes mirrors and never touches the receiver's
-own notes. Relation types the receiving vault doesn't define are skipped and counted.
+Shared copies are mirrors, marked like the Discourse Graph plugin marks imports (`importedFromRid`,
+relations with `tentative: false`). **Repeat sync and conflicts follow [docs/sync.md](docs/sync.md)**:
+
+- the **database keeps every version** (`entity_revision`, written by triggers and linked to the PROV-O
+  activity that replaced it); tools show the latest with a banner: *latest version vN, history in the database*
+- unedited mirrors **refresh** when the original changes, in Obsidian and Roam
+- a mirror the receiver **edited** is never overwritten: the incoming version goes beside it
+  (`Shared/<space>/_conflicts/` in Obsidian, a `dm_conflict::` block in Roam) and a conflict is recorded
+- deleting a mirror stops it being re-created; deleting an original marks it deleted and flags its mirrors
+- sync state lives in the database (`share_record`), so every decision is auditable
 
 ```
 Maya's Roam ──import-roam──▶ Supabase ──share-to-obsidian──▶ Sam's vault
@@ -140,7 +147,8 @@ the role is `contributor`, and even then only as `unknown`, in your own name.
 
 ```
 src/discourse_maps/   cli, zitter, bibtex, importer, obsidian_import, roam, share, enrich, embeddings, search, obsidian, db
-supabase/migrations/  core tables, standards layers, RLS, RLS hardening
+supabase/migrations/  core tables, standards layers, RLS, RLS hardening, sync history
+docs/sync.md          sync / repeat-sync / conflict scenarios and policies
 scripts/              api_user_demo.py (remote user over HTTP under RLS)
 tests/                unit tests + DB integration tests (marked `db`, skip if Supabase is down)
 docs/design/          original concept, vision, and architecture documents
@@ -153,6 +161,7 @@ data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault
 - [x] Obsidian vault import (plugin format, review status)
 - [x] RLS on all tables using `has_permission()`
 - [x] Return trip: share nodes into another researcher's vault or Roam graph
+- [x] Repeat sync: refresh, conflict detection, deletions, full history in the database
 - [ ] Full-text PDF search (needed for questions like "who mentions stochastic electrodynamics?")
 - [ ] Semantic search as an API endpoint (RPC or Edge Function)
 - [ ] SKOS concept schemes for shared vocabularies (ISO 25964), and W3C Web Annotation

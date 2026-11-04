@@ -73,6 +73,72 @@ def import_roam(
 
 
 @app.command()
+def history(
+    node: Annotated[str, typer.Argument(help='A node title (or part of it), or a "dm:<space>#<id>" rid')],
+) -> None:
+    """Every recorded version of a node, newest first, with the run that replaced it (docs/sync.md)."""
+    from discourse_maps.importer import parse_rid
+
+    with connect() as conn:
+        if parsed := parse_rid(node):
+            where, params = "s.url = %s and k.source_local_id = %s", parsed
+        else:
+            where, params = "k.name ilike %s and not k.is_schema and not k.is_relation", (f"%{node}%",)
+        matches = conn.execute(
+            f"""select k.id, k.name, s.url, k.literal_content, (k.reference_content->>'content')::bigint as content_id,
+                       public.content_version((k.reference_content->>'content')::bigint) as version
+                from "Concept" k join "Space" s on s.id = k.space_id where {where} order by k.id limit 5""",
+            params,
+        ).fetchall()
+        if not matches:
+            raise typer.BadParameter("No matching node.")
+        for m in matches:
+            deleted = " (deleted at origin)" if "deleted_at" in m["literal_content"] else ""
+            typer.echo(f"\n{m['name']}{deleted}\n  space: {m['url']}   current version: v{m['version']}")
+            for r in conn.execute(
+                """
+                select r.table_name, r.operation, r.replaced_at, r.data, a.activity_type, a.id as activity
+                from entity_revision r left join prov_activity a on a.id = r.activity_id
+                where r.entity_id in (%s, %s) order by r.replaced_at desc
+                """,
+                (m["id"], m["content_id"]),
+            ):
+                old = r["data"].get("text") or r["data"].get("name") or ""
+                old = old.replace("\n", " ")[:90]
+                typer.echo(
+                    f"  {r['replaced_at']:%Y-%m-%d %H:%M}  {r['table_name']:<7} {r['operation']:<6} "
+                    f"by {r['activity_type'] or '?'} #{r['activity'] or '-'}  was: {old}"
+                )
+            for s in conn.execute(
+                "select target, status, origin_version, shared_at from share_record where origin_concept_id = %s",
+                (m["id"],),
+            ):
+                typer.echo(
+                    f"  shared to {s['target']}: v{s['origin_version']} {s['status']} ({s['shared_at']:%Y-%m-%d})"
+                )
+
+
+@app.command()
+def conflicts() -> None:
+    """Open sync conflicts: mirrors a receiver edited after which the original changed."""
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            select c.target, k.name, c.mirror_ref, c.incoming_ref, c.detected_at
+            from sync_conflict c join "Concept" k on k.id = c.origin_concept_id
+            where c.resolved_at is null order by c.detected_at
+            """
+        ).fetchall()
+        if not rows:
+            typer.echo("  no open conflicts")
+        for r in rows:
+            typer.echo(
+                f"  {r['detected_at']:%Y-%m-%d %H:%M}  {r['target']}\n    {r['name']}\n"
+                f"    kept: {r['mirror_ref']}   incoming: {r['incoming_ref']}"
+            )
+
+
+@app.command()
 def spaces() -> None:
     """List spaces (one per Roam graph, Obsidian vault, or import source) and their node counts."""
     with connect() as conn:

@@ -29,6 +29,7 @@ from discourse_maps.importer import (
     RELATION_SCHEMAS,
     ensure_schemas,
     find_same_work,
+    mark_missing_deleted,
     parse_rid,
     relation_exists_elsewhere,
     resolve_rid,
@@ -364,7 +365,8 @@ def import_graph(conn: psycopg.Connection, graph: RoamGraph) -> dict[str, int]:
                                        literal_content, reference_content, source_local_id)
                 values (%s, %s, %s, %s, true, 2, %s, %s, %s)
                 on conflict (space_id, source_local_id) do update
-                    set reference_content = excluded.reference_content
+                    set reference_content = excluded.reference_content,
+                        literal_content = excluded.literal_content
                 returning id, (xmax = 0) as inserted
                 """,
                 (
@@ -379,4 +381,7 @@ def import_graph(conn: psycopg.Connection, graph: RoamGraph) -> dict[str, int]:
             )
             act.record(rel_id, inserted)
             act.count(f"relation_{rel}")
+        seen = {f"node:{uid}" for uid in nodes} | {f"rel:{r}:{a}->{b}" for r, a, b, _ in relations}
+        if deleted := mark_missing_deleted(conn, space_id, seen):
+            act.count("marked_deleted", deleted)
     return act.summary

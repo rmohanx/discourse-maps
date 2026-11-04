@@ -86,6 +86,8 @@ def activity(
         """,
         (activity_type, agent_id, Jsonb(parameters)),
     ).fetchone()
+    # Tell the revision triggers which activity is changing rows (docs/sync.md).
+    conn.execute("select set_config('dm.activity_id', %s, false)", (str(row["id"]),))
     conn.commit()
     act = Activity(conn, row["id"])
     try:
@@ -105,4 +107,5 @@ def activity(
         "update prov_activity set status = 'complete', ended_at = now(), summary = %s where id = %s",
         (Jsonb(act.summary), act.id),
     )
+    conn.execute("select set_config('dm.activity_id', '', false)")
     conn.commit()
