@@ -3,6 +3,15 @@
 Single list of planned work for discourse-maps. Update it when an item is done or added.
 Status: `[x]` done, `[ ]` open, `[~]` in progress.
 
+## Priorities
+
+1. [ ] List and extend test cases and use cases (see *Tests and use cases*).
+2. [ ] Move Supabase to the cloud (see *Hosting*).
+3. [ ] Implement and extend PROV-O (see *Provenance and standards*).
+4. [ ] Implement SKOS (see *Provenance and standards*).
+5. [ ] Set up a public API for Supabase (see *API and search*).
+6. [ ] Create canned demos (see *Demos*).
+
 ## Done
 
 - [x] BibTeX import (Zitter repository), OpenAlex/Crossref enrichment, `cites` relations
@@ -21,7 +30,18 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
       rows (63% of `prov_generation` rows were orphans on 2026-11-04). Fix test teardown, add a delete
       trigger (or periodic purge) on Document / Content / Concept, and clean existing orphans once.
 
+## Tests and use cases
+
+- [ ] Write down the use cases (researcher, lab, reviewer, LLM agent) in `docs/use-cases.md`, each linked
+      to the tests that cover it.
+- [ ] List the existing tests by area (import, enrich, search, share, sync, RLS) and find gaps.
+- [ ] Add tests for the gaps: multi-user RLS, cross-space relations, provenance per author, API endpoints.
+- [ ] Consider Gherkin feature files for access and concepts, like upstream.
+
 ## Provenance and standards
+
+- [ ] Extend PROV-O beyond run-level records (items below), with queries that answer
+      "who said what, when, from which source".
 
 - [ ] Per-researcher provenance: record each author as a `prov:Agent` (`wasAttributedTo`) per Concept
       and per revision, not only the pipeline account on the run.
@@ -47,6 +67,7 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
 
 ## API and search
 
+- [ ] Public API on hosted Supabase: PostgREST under RLS, API keys per user, documented endpoints.
 - [ ] HTTP API (FastAPI) mirroring upstream endpoints (`/content`, `/space`, `/similarity-rank`).
 - [ ] Semantic search as an API endpoint (RPC or Edge Function).
 - [ ] `my_*` views for API clients, like upstream.
@@ -57,3 +78,10 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
 
 - [ ] Move to hosted Supabase. Database is ~19 MB, so Free (Nano) fits, but Free pauses after 1 week
       of inactivity; Pro + Micro is $25/month flat. Steps: `supabase link`, `supabase db push`, load data.
+
+## Demos
+
+- [ ] Canned demos: scripted, repeatable, resettable runs (e.g. `scripts/demo_*.sh` with seed data):
+      import from Obsidian and Roam, cross-tool search, share and re-sync with a conflict, provenance
+      trail for one claim, remote API user under RLS.
+- [ ] A reset step so each demo starts from the same state.
