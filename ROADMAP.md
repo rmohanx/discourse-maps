@@ -86,7 +86,7 @@ $25/month flat and upgrades in place.
 - [x] Advisors on the cloud project (Management API): Security 0 findings after migration 6; only "unused index" info notes remain.
 - [x] Auth: open sign-ups disabled; tester account (contributor on all 3 spaces); `docs/api-tester.md`.
 - [ ] Auth: set site URL and redirect URLs (still `http://localhost:3000`).
-- [ ] Reset the database password to a generated one before inviting users.
+- [x] Database password reset to a generated one (2026-11-04).
 - [ ] Turn off `pg_graphql` unless needed; keep auth rate limits on.
 - [ ] Shared-copy ids (`importedFromRid` = `dm:<space>#<id>`) use database ids, so copies made against
       the local database do not resolve in the cloud (7 orphaned on first cloud import). Use stable keys
