@@ -59,6 +59,12 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
 
 ## Sync and tools
 
+- [ ] Upstream contribution: configurable server endpoint in the Obsidian and Roam plugins. Today
+      `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `NEXT_API_ROOT` are baked in at build time
+      (esbuild `define` in `apps/obsidian/scripts/compile.ts`, `apps/roam/scripts/compile.ts`), so every
+      published build talks only to the hosted backend. Add a settings field (URL + key, defaulting to the
+      built-in values) to allow self-hosted labs, staging, and other servers without a rebuild.
+      Follow-up: federation (sharing between separate servers).
 - [ ] Trigger import from inside the tools: Obsidian hotkey or on-save via a shell-command plugin;
       Roam extension calling our API.
 - [ ] Sync job lock (upstream `sync_info`) for concurrent or scheduled syncs.
