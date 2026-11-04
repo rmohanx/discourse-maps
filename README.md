@@ -143,6 +143,19 @@ Every public table has row-level security driven by `has_permission(space, permi
 `/rest/v1/...`. A `reader` on the Zitter space sees only that space; proposing a Claim is refused until
 the role is `contributor`, and even then only as `unknown`, in your own name.
 
+## Local and cloud
+
+The hosted Supabase project is the main copy; the local Docker database is a working copy.
+
+- **Schema** goes one way, laptop to cloud: `supabase db push --linked` (try `--dry-run` first).
+- **Pipeline** runs on the laptop against either database: `uv run dm --target cloud <command>`
+  (or `DM_TARGET=cloud`). Default is `local`. Cloud settings live in the git-ignored `.env.cloud`
+  (`DATABASE_URL_CLOUD`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, ...).
+- **Data** reaches the cloud by re-running the pipeline there (`import`, `enrich`, `embed`,
+  `import-obsidian`, `import-roam`), not by copying the local database.
+- **Refresh the laptop** from the cloud: `scripts/pull_cloud.sh --yes` (wipes local data first).
+- Tests always use the local database (`tests/conftest.py` forces `DM_TARGET=local`).
+
 ## Layout
 
 ```
@@ -150,7 +163,7 @@ src/discourse_maps/   cli, zitter, bibtex, importer, obsidian_import, roam, shar
 supabase/migrations/  core tables, standards layers, RLS, RLS hardening, sync history
 docs/sync.md          sync / repeat-sync / conflict scenarios and policies
 docs/testing.md       every test case (automated and manual) and how to run it from the CLI
-scripts/              api_user_demo.py (remote user over HTTP under RLS)
+scripts/              api_user_demo.py (remote user over HTTP under RLS), pull_cloud.sh (cloud -> laptop)
 tests/                unit tests + DB integration tests (marked `db`, skip if Supabase is down)
 docs/design/          original concept, vision, and architecture documents
 data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault

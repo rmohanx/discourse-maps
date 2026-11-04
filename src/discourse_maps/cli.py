@@ -12,6 +12,26 @@ from discourse_maps.db import connect
 app = typer.Typer(no_args_is_help=True, help="Discourse Maps: plumbing for discourse graphs on Supabase.")
 
 
+@app.callback()
+def main(
+    target: Annotated[
+        str,
+        typer.Option(
+            envvar="DM_TARGET",
+            help="Database to use: local (Docker) or cloud (hosted Supabase, from .env.cloud)",
+        ),
+    ] = "local",
+) -> None:
+    import os
+
+    target = target.strip().lower()
+    if target not in ("local", "cloud"):
+        raise typer.BadParameter("must be local or cloud", param_hint="--target")
+    os.environ["DM_TARGET"] = target
+    if target == "cloud":
+        typer.echo("Target: cloud (hosted Supabase)", err=True)
+
+
 def _show(summary: dict) -> None:
     for key, value in summary.items():
         typer.echo(f"  {key}: {value}")

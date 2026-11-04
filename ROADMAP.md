@@ -6,7 +6,7 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
 ## Priorities
 
 1. [ ] List and extend test cases and use cases (see *Tests and use cases*).
-2. [ ] Move Supabase to the cloud (see *Hosting*).
+2. [~] Move Supabase to the cloud (see *Hosting*).
 3. [ ] Implement and extend PROV-O (see *Provenance and standards*).
 4. [ ] Implement SKOS (see *Provenance and standards*).
 5. [ ] Set up a public API for Supabase (see *API and search*).
@@ -76,8 +76,21 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
 
 ## Hosting
 
-- [ ] Move to hosted Supabase. Database is ~19 MB, so Free (Nano) fits, but Free pauses after 1 week
-      of inactivity; Pro + Micro is $25/month flat. Steps: `supabase link`, `supabase db push`, load data.
+Hosted project on the Free plan (us-east-1). Free pauses after 1 week of inactivity; Pro + Micro is
+$25/month flat and upgrades in place.
+
+- [x] Create project, `supabase link`, `supabase db push --linked` (5 migrations, RLS on all 16 tables).
+- [x] `dm --target local|cloud`; tests forced to local.
+- [x] Load cloud by re-running the pipeline (224 documents, 269 relations, 224 embeddings).
+- [x] `scripts/pull_cloud.sh` to refresh the laptop from the cloud.
+- [ ] Run the Security and Performance Advisors on the cloud project (dashboard or Supabase MCP).
+- [ ] Auth: invite-only (disable open sign-ups), set site URL and redirect URLs.
+- [ ] Reset the database password to a generated one before inviting users.
+- [ ] Turn off `pg_graphql` unless needed; keep auth rate limits on.
+- [ ] Shared-copy ids (`importedFromRid` = `dm:<space>#<id>`) use database ids, so copies made against
+      the local database do not resolve in the cloud (7 orphaned on first cloud import). Use stable keys
+      (space URL + `source_local_id`) instead.
+- [ ] Server-side query embeddings for API search (built-in `gte-small` Edge Function, or OpenAI).
 
 ## Demos
 
