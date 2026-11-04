@@ -163,7 +163,7 @@ src/discourse_maps/   cli, zitter, bibtex, importer, obsidian_import, roam, shar
 supabase/migrations/  core tables, standards layers, RLS, RLS hardening, sync history
 docs/sync.md          sync / repeat-sync / conflict scenarios and policies
 docs/testing.md       every test case (automated and manual) and how to run it from the CLI
-scripts/              api_user_demo.py (remote user over HTTP under RLS), pull_cloud.sh (cloud -> laptop)
+scripts/              api_user_demo.py (remote user under RLS), pull_cloud.sh (cloud -> laptop), tester_upload.py (outside tester uploads own vault)
 tests/                unit tests + DB integration tests (marked `db`, skip if Supabase is down)
 docs/design/          original concept, vision, and architecture documents
 data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault

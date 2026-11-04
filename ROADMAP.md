@@ -59,6 +59,10 @@ Status: `[x]` done, `[ ]` open, `[~]` in progress.
 
 ## Sync and tools
 
+- [ ] Import tagged-line candidate nodes: a node can be one line inside a larger note, tagged with its
+      node type's tag (`#clm-candidate`, from `nodeTypes[].tag` in the plugin's `data.json`). Our
+      `obsidian_import.py` reads only whole notes and skips these. (`scripts/tester_upload.py` already
+      handles them.)
 - [ ] Upstream contribution: configurable server endpoint in the Obsidian and Roam plugins. Today
       `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `NEXT_API_ROOT` are baked in at build time
       (esbuild `define` in `apps/obsidian/scripts/compile.ts`, `apps/roam/scripts/compile.ts`), so every

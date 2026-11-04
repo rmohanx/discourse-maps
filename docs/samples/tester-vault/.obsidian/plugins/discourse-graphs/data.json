@@ -1,0 +1,28 @@
+{
+  "nodeTypes": [
+    {
+      "id": "node_icFgqocWSakT93Q2UoNFa",
+      "name": "Question",
+      "format": "QUE - {content}",
+      "tag": null
+    },
+    {
+      "id": "node_Uv7fw4_1x4Jhn_iMNRJkB",
+      "name": "Claim",
+      "format": "CLM - {content}",
+      "tag": "clm-candidate"
+    },
+    {
+      "id": "node_Le0n9Kco1geXxh6JEX0lo",
+      "name": "Evidence",
+      "format": "EVD - {content}",
+      "tag": "evd-candidate"
+    },
+    {
+      "id": "node_5X10dnMUbgMoiRNPVpd3c",
+      "name": "Source",
+      "format": "SRC - {content}",
+      "tag": "src-candidate"
+    }
+  ]
+}
