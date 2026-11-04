@@ -84,7 +84,8 @@ $25/month flat and upgrades in place.
 - [x] Load cloud by re-running the pipeline (224 documents, 269 relations, 224 embeddings).
 - [x] `scripts/pull_cloud.sh` to refresh the laptop from the cloud.
 - [x] Advisors on the cloud project (Management API): Security 0 findings after migration 6; only "unused index" info notes remain.
-- [ ] Auth: invite-only (disable open sign-ups), set site URL and redirect URLs.
+- [x] Auth: open sign-ups disabled; tester account (contributor on all 3 spaces); `docs/api-tester.md`.
+- [ ] Auth: set site URL and redirect URLs (still `http://localhost:3000`).
 - [ ] Reset the database password to a generated one before inviting users.
 - [ ] Turn off `pg_graphql` unless needed; keep auth rate limits on.
 - [ ] Shared-copy ids (`importedFromRid` = `dm:<space>#<id>`) use database ids, so copies made against
