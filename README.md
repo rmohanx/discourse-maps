@@ -157,16 +157,7 @@ data/                 git-ignored: raw downloads, PDFs, generated Obsidian vault
 
 ## Roadmap
 
-- [x] Roam import via the backend API or JSON export
-- [x] Obsidian vault import (plugin format, review status)
-- [x] RLS on all tables using `has_permission()`
-- [x] Return trip: share nodes into another researcher's vault or Roam graph
-- [x] Repeat sync: refresh, conflict detection, deletions, full history in the database
-- [ ] Full-text PDF search (needed for questions like "who mentions stochastic electrodynamics?")
-- [ ] Semantic search as an API endpoint (RPC or Edge Function)
-- [ ] SKOS concept schemes for shared vocabularies (ISO 25964), and W3C Web Annotation
-- [ ] HTTP API (FastAPI) mirroring upstream endpoints; nanopublication (RDF) export
-- [ ] Claim/Evidence extraction from abstracts with an LLM, stored as *proposed* Concepts
+See [ROADMAP.md](ROADMAP.md).
 
 ## License
 
